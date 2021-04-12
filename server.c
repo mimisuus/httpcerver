@@ -79,6 +79,7 @@ int get_word_from_buffer(char *param_location, int start_index) {
             if (curr_word_len == 0) continue;
 
             strncpy(param_location, buffer + i - curr_word_len, curr_word_len);
+            param_location[curr_word_len] = '\0';
             return i;
         }
         else curr_word_len++;
@@ -166,19 +167,22 @@ int main(int argc, char *argv[]) {
         next_index = get_word_from_buffer(path, next_index);
 
         if (path[0] == '/') memmove(path, path+1, strlen(path)); // Remove first '/'
-
-        if (path[0] == '\0') path = "index.html"; // default homepage
+        if (path[0] == '\0') strncpy(path, "index.html", strlen("index.html")+1); //default homepage
 
         // Only implementing GET for now
         if (!strncmp(method, "GET", 4)) {
             if (strstr(path, "..")) {
                 printf("Client tried accessing a parent directory, closing connection..\n");
                 return_error(connectfd, "400 Bad Request");
+                free(path);
+                free(method);
                 continue;
             }
             // Check in case file doesn't exist
             if (access(path, F_OK) != 0) {
                 return_error(connectfd, "404 Not Found");
+                free(path);
+                free(method);
                 continue;
             } 
 
@@ -186,6 +190,8 @@ int main(int argc, char *argv[]) {
             if (page_file == NULL) {
                 // A file without read permissions
                 return_error(connectfd, "403 Forbidden");
+                free(path);
+                free(method);
                 continue;
             }
 
@@ -198,6 +204,8 @@ int main(int argc, char *argv[]) {
 
             if (file_type == NULL) {
                 return_error(connectfd, "400 Bad Request");
+                free(path);
+                free(method);
                 continue;
             }
 
@@ -213,6 +221,8 @@ int main(int argc, char *argv[]) {
                 write(connectfd, buffer, count_block);
             }
         }
+        free(path);
+        free(method);
 
         // Stop transmissions/receptions
         close_connection(connectfd);
